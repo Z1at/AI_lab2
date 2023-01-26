@@ -1,0 +1,756 @@
+{
+ "cells":[
+  {
+   "cell_type":"markdown",
+   "source":[
+    "## Прогнозирование цен на жилье с помощью нейросетевой регрессионной модели\n",
+    "\n",
+    "Необходимо по имеющимся данным о ценах на жильё предсказать окончательную цену каждого дома с учетом характеристик домов с использованием нейронной сети. Описание набора данных  содержит 80 классов (набор переменых) классификации оценки типа жилья, и находится в файле `data_description.txt`.\n",
+    "\n",
+    "В работе требуется дополнить раздел «Моделирование» в подразделе «Построение и обучение модели» создать и инициализировать последовательную модель нейронной сети с помощью фрэймворков тренировки нейронных сетей как: Torch или Tensorflow. Скомпилировать нейронную сеть выбрав функцию потерь и оптимизатор соответственно. Оценить точность полученных результатов. Вывести предсказанные данные о продаже. \n",
+    "\n",
+    "\n",
+    "### Импорт библиотек\n",
+    "Импортируем необходимые библиотеки:"
+   ],
+   "attachments":{
+    
+   },
+   "metadata":{
+    "datalore":{
+     "node_id":"CFxNZVf0hbNxeCop4nIN2T",
+     "type":"MD",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"code",
+   "source":[
+    "import numpy as np\n",
+    "import pandas as pd\n",
+    "import matplotlib.pyplot as plt\n",
+    "from sklearn.model_selection import train_test_split"
+   ],
+   "execution_count":1,
+   "outputs":[
+    
+   ],
+   "metadata":{
+    "datalore":{
+     "node_id":"BuwU26gdC1ZUAFRZo5cgMp",
+     "type":"CODE",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"markdown",
+   "source":[
+    "### Считываем набор данных\n",
+    "\n",
+    "\n",
+    "Загрузим набор данных и присвоим следующими переменные:\n",
+    "\n",
+    "* `train_data`: данные, используемые для обучения модели\n",
+    "* `test_data`: данные, используемые для проверки модели"
+   ],
+   "attachments":{
+    
+   },
+   "metadata":{
+    "datalore":{
+     "node_id":"yDvlZr4HAkGEmZYhi0oxLW",
+     "type":"MD",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"code",
+   "source":[
+    "train_data = pd.read_csv('\/data\/notebook_files\/train.csv')\n",
+    "test_data = pd.read_csv('\/data\/notebook_files\/test.csv')"
+   ],
+   "execution_count":2,
+   "outputs":[
+    
+   ],
+   "metadata":{
+    "datalore":{
+     "node_id":"cv3SeTOL5K6waszFLFVrHV",
+     "type":"CODE",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"markdown",
+   "source":[
+    "## Подготовка данных\n",
+    "### Отобразим обучающие и проверочные данные:"
+   ],
+   "attachments":{
+    
+   },
+   "metadata":{
+    "datalore":{
+     "node_id":"OkRocMZR6KzqkfMDYArdLj",
+     "type":"MD",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"code",
+   "source":[
+    "train_data.head()"
+   ],
+   "execution_count":3,
+   "outputs":[
+    
+   ],
+   "metadata":{
+    "datalore":{
+     "node_id":"FeQpLhWFiCUvkwKTZJGt77",
+     "type":"CODE",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"code",
+   "source":[
+    "test_data.head()"
+   ],
+   "execution_count":4,
+   "outputs":[
+    
+   ],
+   "metadata":{
+    "datalore":{
+     "node_id":"PtlgCCQ1tenYmqz4uqrL0r",
+     "type":"CODE",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"markdown",
+   "source":[
+    "Как можно видеть, `train_data` имеет на один столбец больше, чем `test_data`, это столбец `SalePrice`, для обучения модели перед применением ее для предсказания меток в test_data."
+   ],
+   "attachments":{
+    
+   },
+   "metadata":{
+    "datalore":{
+     "node_id":"m2HZ1ayKDr8MOHpK2TtCFB",
+     "type":"MD",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"markdown",
+   "source":[
+    "### Проверяем нет ли тестовые данные пустых значений значений (Nan)\n",
+    "\n",
+    "Построим функцию `def missing_value_checker` для проверки и подсчёта пропущеных значений в test_data. А также выведем тип данных этих значений.\n"
+   ],
+   "attachments":{
+    
+   },
+   "metadata":{
+    "datalore":{
+     "node_id":"LvA8hUPBQzVxQWBqcatifj",
+     "type":"MD",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"code",
+   "source":[
+    "def missing_value_checker(data):\n",
+    "    list = []\n",
+    "    for feature, content in data.items():\n",
+    "        if data[feature].isnull().values.any():\n",
+    "            \n",
+    "            sum = data[feature].isna().sum()\n",
+    "\n",
+    "            type = data[feature].dtype\n",
+    "\n",
+    "            print (f'{feature}: {sum}, type: {type}')\n",
+    "            \n",
+    "            list.append(feature)\n",
+    "    print(list)\n",
+    "\n",
+    "    print(len(list))\n",
+    "\n",
+    "missing_value_checker(test_data)"
+   ],
+   "execution_count":5,
+   "outputs":[
+    
+   ],
+   "metadata":{
+    "datalore":{
+     "node_id":"pxUQWKUmcS70sX8fsExVI9",
+     "type":"CODE",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"markdown",
+   "source":[
+    "Проверяем какие признаки в таблице можно оставить, а какие удалить. Если пропущенных значений слишком много, то удалим признак. Если их небольшое количество, то заполним `mean` или `median` для чисел, новая категория `missing` для строковых объектов.\n",
+    "\n",
+    "В соответствии с этим:\n",
+    "\n",
+    "– удалим ['Alley', 'FireplaceQu', 'PoolQC', 'Fence', 'MiscFeature'];\n",
+    "\n",
+    "– заполним числовое отсутствующее значение значением `mean`;\n",
+    "\n",
+    "– заполним строковое отсутствующее значение значением `missing`."
+   ],
+   "attachments":{
+    
+   },
+   "metadata":{
+    "datalore":{
+     "node_id":"U2c2Jm8OgAYtZqUCaBITi4",
+     "type":"MD",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"code",
+   "source":[
+    "test_edited = test_data.drop(['Alley','FireplaceQu','PoolQC', 'Fence', 'MiscFeature'], axis=1)\n",
+    "train_edited = train_data.drop(['Alley','FireplaceQu','PoolQC', 'Fence', 'MiscFeature'], axis=1)\n",
+    "\n",
+    "def nan_filler(data):\n",
+    "    for label, content in data.items():\n",
+    "        if pd.api.types.is_numeric_dtype(content):\n",
+    "            data[label] = content.fillna(content.median())\n",
+    "        else:\n",
+    "            data[label] = content.astype(\"category\").cat.as_ordered()\n",
+    "            data[label] = pd.Categorical(content).codes+1\n",
+    "\n",
+    "nan_filler(test_edited)\n",
+    "nan_filler(train_edited)"
+   ],
+   "execution_count":7,
+   "outputs":[
+    
+   ],
+   "metadata":{
+    "datalore":{
+     "node_id":"2KCsgKLRNIzdZGdZDJavSo",
+     "type":"CODE",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"markdown",
+   "source":[
+    "### Перепроверим наши данные:"
+   ],
+   "attachments":{
+    
+   },
+   "metadata":{
+    "datalore":{
+     "node_id":"at2x2hjP7J2ggCGjl4bDdp",
+     "type":"MD",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"code",
+   "source":[
+    "missing_value_checker(test_edited)"
+   ],
+   "execution_count":8,
+   "outputs":[
+    
+   ],
+   "metadata":{
+    "datalore":{
+     "node_id":"ndeDW0XUjTNQZbl08hStGd",
+     "type":"CODE",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"code",
+   "source":[
+    "missing_value_checker(train_edited)"
+   ],
+   "execution_count":9,
+   "outputs":[
+    
+   ],
+   "metadata":{
+    "datalore":{
+     "node_id":"wLLxXh3dPBZhWswJRtePAF",
+     "type":"CODE",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"code",
+   "source":[
+    "train_edited.shape, test_edited.shape"
+   ],
+   "execution_count":10,
+   "outputs":[
+    
+   ],
+   "metadata":{
+    "datalore":{
+     "node_id":"uun8jPN10ZuxbG043ZksEJ",
+     "type":"CODE",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"code",
+   "source":[
+    "test_edited.info()"
+   ],
+   "execution_count":11,
+   "outputs":[
+    
+   ],
+   "metadata":{
+    "datalore":{
+     "node_id":"Rlx0t4SQFyHXlcaeU5CL3e",
+     "type":"CODE",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"code",
+   "source":[
+    "train_edited.info()"
+   ],
+   "execution_count":12,
+   "outputs":[
+    
+   ],
+   "metadata":{
+    "datalore":{
+     "node_id":"F2soDeOs0hu9vFpzLvQWtO",
+     "type":"CODE",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"markdown",
+   "source":[
+    "### Разделим данные\n",
+    "\n",
+    "Поскольку мы не знаем метку (Цена) тестовых данных, для оценки модели, чтобы получить лучшую модель перед прогнозированием тестовых данных, разделим данные в файле train.scv на обучающие и проверочные данные, соотношение составляет 20%."
+   ],
+   "attachments":{
+    
+   },
+   "metadata":{
+    "datalore":{
+     "node_id":"sctXpXpVAyHpq6e2u72Jit",
+     "type":"MD",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"code",
+   "source":[
+    "X = train_edited.drop('SalePrice', axis=1)\n",
+    "y = train_edited['SalePrice']\n",
+    "\n",
+    "X_train, X_val, y_train, y_val = train_test_split(X, y, test_size = 0.2)"
+   ],
+   "execution_count":14,
+   "outputs":[
+    
+   ],
+   "metadata":{
+    "datalore":{
+     "node_id":"t8LurcYSC79LJFUQFBR6IP",
+     "type":"CODE",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"code",
+   "source":[
+    "X_train.shape, test_edited.shape"
+   ],
+   "execution_count":15,
+   "outputs":[
+    
+   ],
+   "metadata":{
+    "datalore":{
+     "node_id":"i93j4GwqcU1GyQ4VPlqVfO",
+     "type":"CODE",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"markdown",
+   "source":[
+    "## Моделирование"
+   ],
+   "attachments":{
+    
+   },
+   "metadata":{
+    "datalore":{
+     "node_id":"rwifuS2QgPW48EMtsBXdFH",
+     "type":"MD",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"markdown",
+   "source":[
+    "### Построение и обучение модели"
+   ],
+   "attachments":{
+    
+   },
+   "metadata":{
+    "datalore":{
+     "node_id":"ZV0KjiWMU6QB7jLp3j5yc8",
+     "type":"MD",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"markdown",
+   "source":[
+    "\n",
+    "Создайте последовательную модель нейронной сети с помощью фрэймворков тренировки нейронных сетей как: Torch или Tensorflow. "
+   ],
+   "attachments":{
+    
+   },
+   "metadata":{
+    "datalore":{
+     "node_id":"G277rUWTnvZaphr9V2bwEz",
+     "type":"MD",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"code",
+   "source":[
+    "# from tensorflow import keras или import torch\n",
+    "model = Sequential(None)\n",
+    "# замените None на колличество входных полносвязных слоёв, колличество нейронов, колличество выходов\n",
+    "tf.random.set_seed(40) \/ torch.manual_seed(40) #Для обеспечения воспроизводимости результатов устанавливается функция seed"
+   ],
+   "execution_count":14,
+   "outputs":[
+    
+   ],
+   "metadata":{
+    "datalore":{
+     "node_id":"MpU8VN6DOjpBNi6I834Lpu",
+     "type":"CODE",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"markdown",
+   "source":[
+    "Скомпилируйте нейронную сеть, выбрав функцию потерь и оптимизатор соответственно."
+   ],
+   "attachments":{
+    
+   },
+   "metadata":{
+    "datalore":{
+     "node_id":"TuMuPzKI9mkpXMfMOnK1LA",
+     "type":"MD",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"code",
+   "source":[
+    "\n",
+    "model.compile(loss=None, optimizer=None, metrics=['None']) #Для оценки потерь и метрики рекомендую использовать метрики и функции потерь для регрессии."
+   ],
+   "execution_count":null,
+   "outputs":[
+    
+   ],
+   "metadata":{
+    "datalore":{
+     "node_id":"Qxs8obrnFlj2CqfZz7kIHz",
+     "type":"CODE",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"markdown",
+   "source":[
+    "Обучите модель на обучающих данных `X_train` и `y_train` задав гиперпараметры вашей модели нейронной сети, например количество эпох (epochs), размер мини-выборки (batch_size) и другие."
+   ],
+   "attachments":{
+    
+   },
+   "metadata":{
+    "datalore":{
+     "node_id":"wUdHBe7xu6vMejIXVhekbo",
+     "type":"MD",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"code",
+   "source":[
+    "history = model.fit(X_train, y_train, None) #замените None на гиперпараметры вашей модели нейронной сети"
+   ],
+   "execution_count":15,
+   "outputs":[
+    
+   ],
+   "metadata":{
+    "datalore":{
+     "node_id":"3vAX3eHvqUuLLDkTWRLTni",
+     "type":"CODE",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"markdown",
+   "source":[
+    "**Оцените полученные результаты**"
+   ],
+   "attachments":{
+    
+   },
+   "metadata":{
+    "datalore":{
+     "node_id":"LZFQS0AKCW5TXjLQTrI0OR",
+     "type":"MD",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"code",
+   "source":[
+    "pd.DataFrame(history.history).plot()\n",
+    "plt.ylabel('xxxx')\n",
+    "plt.xlabel('yyyy')\n",
+    "print(history.history)"
+   ],
+   "execution_count":17,
+   "outputs":[
+    
+   ],
+   "metadata":{
+    "datalore":{
+     "node_id":"wZBd4zSZSgFw6r0HmnY5NE",
+     "type":"CODE",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"code",
+   "source":[
+    "scores = model.evaluate(X_val, y_val, verbose=1)"
+   ],
+   "execution_count":17,
+   "outputs":[
+    
+   ],
+   "metadata":{
+    "datalore":{
+     "node_id":"lMG4cd8mpOR6KHAh9Azgoo",
+     "type":"CODE",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"markdown",
+   "source":[
+    "### Предсказание"
+   ],
+   "attachments":{
+    
+   },
+   "metadata":{
+    "datalore":{
+     "node_id":"WHgYPYiiXxd2J3kqISUUbA",
+     "type":"MD",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"code",
+   "source":[
+    "preds = model.predict(test_edited)\n",
+    "preds"
+   ],
+   "execution_count":43,
+   "outputs":[
+    
+   ],
+   "metadata":{
+    "datalore":{
+     "node_id":"aiGNSLedTFos5pjgz0KiMg",
+     "type":"CODE",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"code",
+   "source":[
+    "#Эту часть рекомендуется дополнить вам, для более информативного отображения результата предсказания.\n",
+    "output = pd.DataFrame(\n",
+    "{\n",
+    "    'Id':test_data['Id'],\n",
+    "    'SalePrice': np.squeeze(preds)\n",
+    "})\n",
+    "output\n",
+    "#print (output)"
+   ],
+   "execution_count":1,
+   "outputs":[
+    
+   ],
+   "metadata":{
+    "datalore":{
+     "node_id":"NvP6Ro1j8jijcQa8KEVbbS",
+     "type":"CODE",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  },
+  {
+   "cell_type":"markdown",
+   "source":[
+    "\n",
+    "**При выполнении:**\n",
+    "\n",
+    "Выведите отчет нейросетевой регрессионной модели, для  прогнозирование цен на жилье. \n",
+    "\n",
+    "\n",
+    "Подберите  разные комбинации гиперпараметров таким образом, чтобы получить лучший результат на тестовом наборе данных.\n",
+    "\n",
+    "Попробуйте использовать разное количество нейронов на входном слое, **например** 100, 150, 200 300.\n",
+    "\n",
+    "Добавьте в нейронную сеть скрытый слой с разным количеством нейронов.\n",
+    "\n",
+    "Используйте разное количество эпох, **например** 10, 15, 20, 25, 30.\n",
+    "\n",
+    "Используйте разные размеры мини-выборки (batch_size), **например** 10, 50, 100, 200.\n",
+    "\n",
+    "Попробуйте использовать разные значения оптимизатора `optimizers` и функции потерь `loss`. Сравните полученные результаты.\n",
+    "\n",
+    "**Вопросы:**\n",
+    "\n",
+    "Как выше перечисленные параметры влияют на полученный вами результат? \n",
+    "\n",
+    "Что такое эпоха (Epoch)? В чем отличие от итерации (Iteration)?\n",
+    "\n",
+    "Что такое функция активации? Какие вам известны? Как и зачем используются в нейронной сети?\n",
+    "\n",
+    "Что такое MSE(Mean Squared Error) - Средняя квадратичная ошибка? Что такое MAE(Mean Absolute Error)? Для чего используются."
+   ],
+   "attachments":{
+    
+   },
+   "metadata":{
+    "datalore":{
+     "node_id":"zhCfqTBB30trs93oPG12Rz",
+     "type":"MD",
+     "hide_input_from_viewers":false,
+     "hide_output_from_viewers":false
+    }
+   }
+  }
+ ],
+ "metadata":{
+  "kernelspec":{
+   "display_name":"Python",
+   "language":"python",
+   "name":"python"
+  },
+  "datalore":{
+   "version":1,
+   "computation_mode":"JUPYTER",
+   "packages":[
+    
+   ]
+  }
+ },
+ "nbformat":4,
+ "nbformat_minor":4
+}
